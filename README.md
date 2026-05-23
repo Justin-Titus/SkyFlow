@@ -30,10 +30,8 @@ A production-ready Flight Management Progressive Web App (PWA) built with Next.j
    - `003_rpc_functions.sql` (Creates atomic reservation, cancellation, and reschedule logic)
    - `004_triggers.sql` (Enforces the 2-hour cancellation rule)
    - `005_seed.sql` (Seeds 8 flights across 4 routes with full seat maps and a test user account)
-   - `006_fix_security_warnings.sql` (Fixes Supabase linter security warnings: search_path, anon access revocation)
 3. Ensure Email/Password Authentication is enabled in your Supabase Auth settings.
-4. **Recommended**: Enable "Leaked password protection" in **Authentication → Settings → Security** to resolve the Supabase auth linter warning.
-5. **Test Account Credentials** (for testing authentication):
+4. **Test Account Credentials** (for testing authentication):
    - **Email**: `test@skyflow.com`
    - **Password**: `password123`
 
