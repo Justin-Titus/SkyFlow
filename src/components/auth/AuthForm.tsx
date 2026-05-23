@@ -222,6 +222,7 @@ function AuthFormContent({ type }: AuthFormProps) {
                   placeholder="John Doe"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
+                  autoComplete="name"
                   required
                   icon={
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -236,6 +237,7 @@ function AuthFormContent({ type }: AuthFormProps) {
                 placeholder="you@example.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                autoComplete={type === 'login' ? 'username' : 'email'}
                 required
                 icon={
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -249,6 +251,7 @@ function AuthFormContent({ type }: AuthFormProps) {
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                autoComplete={type === 'login' ? 'current-password' : 'new-password'}
                 required
                 icon={
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -273,6 +276,7 @@ function AuthFormContent({ type }: AuthFormProps) {
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                   required
                   icon={
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

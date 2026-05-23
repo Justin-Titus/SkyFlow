@@ -66,6 +66,7 @@ export function useRealtimeSeats(flightId: string) {
   const supabase = createClient()
   const localChannelRef = useRef<BroadcastChannel | null>(null)
   const supabaseChannelRef = useRef<RealtimeChannel | null>(null)
+  const isJoinedRef = useRef(false)
 
   // Overlay booked seats from localStorage
   const overlayLocalBookings = useCallback((seatList: Seat[]): Seat[] => {
@@ -112,7 +113,7 @@ export function useRealtimeSeats(flightId: string) {
 
     // 2. Supabase Realtime Broadcast
     try {
-      if (supabaseChannelRef.current) {
+      if (supabaseChannelRef.current && isJoinedRef.current) {
         supabaseChannelRef.current.send({
           type: 'broadcast',
           event: 'seat_lock',
@@ -166,11 +167,13 @@ export function useRealtimeSeats(flightId: string) {
           localChannel?.postMessage({ type: 'seat_lock', payload: p })
         } catch (e) {}
         try {
-          supabaseBroadcastChannel.send({
-            type: 'broadcast',
-            event: 'seat_lock',
-            payload: p
-          })
+          if (isJoinedRef.current) {
+            supabaseBroadcastChannel.send({
+              type: 'broadcast',
+              event: 'seat_lock',
+              payload: p
+            })
+          }
         } catch (e) {}
       })
     }
@@ -195,19 +198,25 @@ export function useRealtimeSeats(flightId: string) {
       .on('broadcast', { event: 'request_locks' }, ({ payload }) => {
         handleRequestLocksMsg(payload)
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isJoinedRef.current = true
+          // Query initial locks from online peers ONLY after websocket is fully established
+          const requestLocksPayload = { sessionId: mySessionId }
+          try {
+            supabaseBroadcastChannel.send({
+              type: 'broadcast',
+              event: 'request_locks',
+              payload: requestLocksPayload
+            })
+          } catch (e) {}
+        }
+      })
 
-    // Query initial locks from online peers
+    // Query local initial locks from other tabs immediately
     const requestLocksPayload = { sessionId: mySessionId }
     try {
       localChannel?.postMessage({ type: 'request_locks', payload: requestLocksPayload })
-    } catch (e) {}
-    try {
-      supabaseBroadcastChannel.send({
-        type: 'broadcast',
-        event: 'request_locks',
-        payload: requestLocksPayload
-      })
     } catch (e) {}
 
     // Fetch actual seat configuration
@@ -310,11 +319,13 @@ export function useRealtimeSeats(flightId: string) {
           localChannel?.postMessage({ type: 'seat_lock', payload: p })
         } catch (e) {}
         try {
-          supabaseBroadcastChannel.send({
-            type: 'broadcast',
-            event: 'seat_lock',
-            payload: p
-          })
+          if (isJoinedRef.current) {
+            supabaseBroadcastChannel.send({
+              type: 'broadcast',
+              event: 'seat_lock',
+              payload: p
+            })
+          }
         } catch (e) {}
       })
     }, 30000)

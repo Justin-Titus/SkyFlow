@@ -25,7 +25,7 @@ export function Tooltip({ children }: { children: React.ReactNode }) {
   return (
     <TooltipContext.Provider value={{ open, setOpen, tooltipId }}>
       <div 
-        className="relative inline-flex" 
+        className={cn("relative inline-flex", open && "z-[100]")} 
         onMouseEnter={() => setOpen(true)} 
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
@@ -63,7 +63,7 @@ export function TooltipContent({ children, className, side = "top", ...props }: 
     <div
       id={context.tooltipId}
       className={cn(
-        "absolute z-50 overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 shadow-md animate-fade-in-up",
+        "absolute z-[100] overflow-hidden rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 shadow-[0_0_20px_rgba(0,0,0,0.5)] animate-fade-in-up",
         sideClasses[side],
         className
       )}
