@@ -20,38 +20,56 @@ export function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   useEffect(() => {
-    useUserStore.persist.rehydrate()
-    useFlightStore.persist.rehydrate()
-    setMounted(true)
     let subscription: { unsubscribe: () => void } | null = null
-    try {
-      const res = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          const currentUser = useUserStore.getState().user
-          const isMock = currentUser && (currentUser.id?.startsWith('mock-') || currentUser.id === 'mock-user-123')
-          if (isMock && !session) {
-            return
-          }
-          setSession(session)
-        }
-      )
-      subscription = res.data.subscription
-    } catch (e) {
-      console.warn('Supabase auth state change subscription failed:', e)
+
+    // 1. Task Splitting: Yield to the main thread before doing heavy JSON parsing 
+    // to prevent blocking the initial Time to Interactive (TTI).
+    const initZustand = async () => {
+      await new Promise(resolve => setTimeout(resolve, 0))
+      useUserStore.persist.rehydrate()
+      useFlightStore.persist.rehydrate()
+      setMounted(true)
     }
+    initZustand()
+
+    // 2. Idle-Time Bootstrapping: Defer the extremely heavy Supabase GoTrue SDK 
+    // initialization until the browser is completely idle.
+    const startAuth = () => {
+      try {
+        const res = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            const currentUser = useUserStore.getState().user
+            const isMock = currentUser && (currentUser.id?.startsWith('mock-') || currentUser.id === 'mock-user-123')
+            if (isMock && !session) {
+              return
+            }
+            setSession(session)
+          }
+        )
+        subscription = res.data.subscription
+      } catch (e) {
+        console.warn('Supabase auth state change subscription failed:', e)
+      }
+    }
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      // @ts-ignore
+      requestIdleCallback(startAuth)
+    } else {
+      setTimeout(startAuth, 500)
+    }
+
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => {
       if (subscription) {
         try {
           subscription.unsubscribe()
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [supabase.auth, setSession])
+  }, [setSession])
 
   const handleLogout = async () => {
     try {
