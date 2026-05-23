@@ -349,8 +349,8 @@ export function useRealtimeSeats(flightId: string) {
   // Process and map active overrides for locks
   const activeSeats = seats.map(seat => {
     const lock = lockedSeats[seat.id]
-    // A seat is locked if another session has it locked, and that lock is less than 5 minutes old
-    const isLockedByOther = lock && lock.sessionId !== mySessionId && (Date.now() - lock.timestamp < 300000)
+    // A seat is locked if another session has it locked (expired locks are automatically purged by the interval)
+    const isLockedByOther = lock && lock.sessionId !== mySessionId
     if (isLockedByOther) {
       return { ...seat, is_available: false }
     }

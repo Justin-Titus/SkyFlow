@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   title: "SkyFlow | Premium Flight Booking",
   description: "Book your next premium flight with SkyFlow — real-time seats, instant confirmation.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
