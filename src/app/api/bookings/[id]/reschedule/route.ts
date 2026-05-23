@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -40,14 +40,14 @@ export async function POST(
 
     // Call the RPC function
     try {
-      const { data, error } = await (supabase.rpc as any)('reschedule_booking', {
+      const { data, error } = await supabase.rpc('reschedule_booking', {
         p_booking_id: bookingId,
         p_user_id: userId,
         p_new_flight_id: newFlightId
       })
 
       if (error) throw error
-      const result = data as any
+      const result = data as unknown as { success: boolean, fee?: number, error?: string }
 
       if (!result || !result.success) {
         return NextResponse.json({ error: result?.error || 'Failed to reschedule booking' }, { status: 400 })
@@ -59,10 +59,10 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Reschedule failed' }, { status: 500 })
     }
     
-  } catch (err: any) {
-    console.error('Reschedule error:', err)
+  } catch (error: unknown) {
+    console.error('Reschedule booking error:', error)
     return NextResponse.json(
-      { error: err.message || 'Internal server error' },
+      { error: 'Internal server error', details: (error as Error)?.message || String(error) },
       { status: 500 }
     )
   }

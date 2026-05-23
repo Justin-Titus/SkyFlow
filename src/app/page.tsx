@@ -1,6 +1,5 @@
 import { SearchForm } from '@/components/flights/SearchForm'
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
-import { TerminalBoard } from '@/components/flights/TerminalBoard'
 import { Badge } from '@/components/ui/Badge'
 import Link from 'next/link'
 import { Zap, ShieldCheck, Ticket, MapPin } from 'lucide-react'
@@ -12,10 +11,10 @@ const FEATURES = [
 ]
 
 const RECOMMENDATIONS = [
-  { code: 'GOI', city: 'Goa', origin: 'BOM', price: '3,499', duration: '1h 10m' },
-  { code: 'BLR', city: 'Bengaluru', origin: 'DEL', price: '5,899', duration: '2h 40m' },
   { code: 'BOM', city: 'Mumbai', origin: 'DEL', price: '4,999', duration: '2h 10m' },
-  { code: 'DEL', city: 'Delhi', origin: 'BLR', price: '6,199', duration: '2h 45m' },
+  { code: 'DEL', city: 'Delhi', origin: 'BLR', price: '5,899', duration: '2h 40m' },
+  { code: 'MAA', city: 'Chennai', origin: 'BOM', price: '3,499', duration: '1h 50m' },
+  { code: 'HYD', city: 'Hyderabad', origin: 'CCU', price: '4,799', duration: '2h 05m' },
 ]
 
 export default function Home() {
@@ -27,7 +26,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col items-center justify-center pt-28 pb-20 px-4 max-w-7xl mx-auto w-full">
         
         {/* Badge pill */}
-        <div className="animate-fade-in-up mb-8" style={{ animationDelay: '0ms' }}>
+        <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-sm font-medium text-indigo-300 backdrop-blur-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
@@ -38,7 +37,7 @@ export default function Home() {
         </div>
 
         {/* Main headline */}
-        <div className="animate-fade-in-up text-center mb-6 max-w-4xl" style={{ animationDelay: '80ms' }}>
+        <div className="text-center mb-6 max-w-4xl">
           <h1 className="text-5xl sm:text-6xl md:text-[80px] font-display font-bold tracking-tight leading-[0.95] text-white mb-6">
             Fly with
             <br />
@@ -63,10 +62,7 @@ export default function Home() {
         </div>
 
         {/* Search form card */}
-        <div 
-          className="w-full max-w-5xl animate-fade-in-up mb-16" 
-          style={{ animationDelay: '240ms' }}
-        >
+        <div className="w-full max-w-5xl mb-16 z-20 relative">
           <div className="relative rounded-3xl overflow-hidden">
             {/* Gradient border */}
             <div className="absolute inset-0 rounded-3xl p-px bg-gradient-to-br from-indigo-500/30 via-transparent to-cyan-500/20 pointer-events-none z-10" style={{ borderRadius: 'inherit' }}>
@@ -85,7 +81,7 @@ export default function Home() {
         </div>
 
         {/* Featured / Popular Routes Section */}
-        <div className="w-full max-w-5xl animate-fade-in-up mb-16" style={{ animationDelay: '320ms' }}>
+        <div className="w-full max-w-5xl mb-16">
           <h2 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
             <span className="w-4 h-px bg-slate-700" />
             POPULAR DOMESTIC ROUTES
@@ -125,15 +121,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Live Boarding Table Board */}
-        <div className="w-full max-w-5xl animate-fade-in-up mb-16" style={{ animationDelay: '380ms' }}>
-          <h2 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
-            <span className="w-4 h-px bg-slate-700" />
-            AIRPORT NETWORK FEED
-            <span className="flex-1 h-px bg-slate-700/50" />
-          </h2>
-          <TerminalBoard />
-        </div>
+        {/* Airport network feed removed */}
 
       </div>
     </div>

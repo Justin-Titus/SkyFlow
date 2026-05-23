@@ -38,7 +38,7 @@ export async function POST(
       })
 
       if (error) throw error
-      const result = data as any
+      const result = data as unknown as { success: boolean, error?: string }
 
       if (!result || !result.success) {
         return NextResponse.json({ error: result?.error || 'Failed to cancel booking' }, { status: 400 })
@@ -50,8 +50,9 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Cancellation failed' }, { status: 500 })
     }
     
-  } catch (error: any) {
-    console.error('Cancel API Error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Cancel booking error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: (error as Error)?.message || String(error) })
   }
 }

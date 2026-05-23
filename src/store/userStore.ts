@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { Session, User } from '@supabase/supabase-js'
+import { useFlightStore } from './flightStore'
 
 export type Booking = {
   id: string;
@@ -11,8 +12,12 @@ export type Booking = {
   booked_at: string;
   total_price: number;
   pnr_code: string;
-  flight?: any; // Will flesh this out later
-  seat?: any;
+  flight?: import('./flightStore').Flight;
+  flights?: import('./flightStore').Flight;
+  seat?: import('./flightStore').Seat;
+  seats?: import('./flightStore').Seat;
+  seats_list?: import('./flightStore').Seat[];
+  passengers?: import('./flightStore').PassengerFormData[];
 }
 
 interface UserStore {
@@ -36,7 +41,11 @@ export const useUserStore = create<UserStore>()(
       setSession: (session) => set({ session, user: session?.user || null }),
       setUser: (user) => set({ user }),
       setCachedBookings: (cachedBookings) => set({ cachedBookings }),
-      logout: () => set({ session: null, user: null, cachedBookings: [] }),
+      logout: () => {
+        // Reset flight store on logout (assignment requirement)
+        useFlightStore.getState().resetBooking()
+        set({ session: null, user: null, cachedBookings: [] })
+      },
     }),
     {
       name: 'user-storage',
@@ -46,6 +55,7 @@ export const useUserStore = create<UserStore>()(
         session: state.session,
         cachedBookings: state.cachedBookings,
       }),
+      skipHydration: true,
     }
   )
 )

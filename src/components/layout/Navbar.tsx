@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useUserStore } from '@/store/userStore'
+import { useFlightStore } from '@/store/flightStore'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { useRouter, usePathname } from 'next/navigation'
@@ -16,10 +17,13 @@ export function Navbar() {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   useEffect(() => {
+    useUserStore.persist.rehydrate()
+    useFlightStore.persist.rehydrate()
     setMounted(true)
-    let subscription: any = null
+    let subscription: { unsubscribe: () => void } | null = null
     try {
       const res = supabase.auth.onAuthStateChange(
         (event, session) => {
@@ -82,10 +86,6 @@ export function Navbar() {
 
   if (isAuthPage) return null
 
-  if (!mounted) return (
-    <header className="h-16 w-full fixed top-0 left-0 right-0 z-50" />
-  )
-
   return (
     <header className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
@@ -107,7 +107,7 @@ export function Navbar() {
                 </svg>
               </div>
             </div>
-            <span className="font-display font-black text-lg tracking-tight text-white group-hover:text-gradient-cyan transition-all duration-300 hidden sm:block">
+            <span className="font-display font-black text-lg tracking-tight text-white group-hover:text-gradient-cyan transition-all duration-300">
               SkyFlow
             </span>
           </Link>
@@ -136,20 +136,49 @@ export function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-3">
-          {user ? (
+          {!mounted ? (
+            <div className="w-24 h-8 bg-white/5 rounded-md animate-pulse" />
+          ) : user ? (
             <>
-              {/* User pill */}
-              <div className="hidden sm:flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 border border-white/10 shadow-[0_0_8px_rgba(99,102,241,0.3)]">
-                  {getDisplayName().charAt(0).toUpperCase()}
-                </div>
-                <span className="max-w-[120px] truncate font-semibold tracking-tight text-[11px]">
-                  {getDisplayName()}
-                </span>
+              {/* User Menu Toggle */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5 hover:bg-white/[0.08] transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  aria-haspopup="true"
+                  aria-expanded={showUserMenu}
+                >
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 border border-white/10 shadow-[0_0_8px_rgba(99,102,241,0.3)]">
+                    {getDisplayName().charAt(0).toUpperCase()}
+                  </div>
+                  <span className="max-w-[120px] truncate font-semibold tracking-tight text-[11px]">
+                    {getDisplayName()}
+                  </span>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-[#0a0a14] border border-white/10 shadow-xl rounded-xl p-2 animate-fade-in-up origin-top-right z-50">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleLogout} 
+                        className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all text-xs h-9"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign out
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-xs">
-                Sign out
-              </Button>
             </>
           ) : (
             <>

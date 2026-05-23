@@ -34,7 +34,7 @@ export function CancelDialog({ bookingId, flightDate, open, onOpenChange, onSucc
       
       try {
         const localBookings = JSON.parse(localStorage.getItem('skyflow_local_bookings') || '[]')
-        const idx = localBookings.findIndex((b: any) => b.id === bookingId)
+        const idx = localBookings.findIndex((b: import('@/store/userStore').Booking) => b.id === bookingId)
         if (idx !== -1) {
           localBookings[idx].status = 'cancelled'
           localStorage.setItem('skyflow_local_bookings', JSON.stringify(localBookings))
@@ -47,8 +47,8 @@ export function CancelDialog({ bookingId, flightDate, open, onOpenChange, onSucc
       onSuccess()
       onOpenChange(false)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Failed to cancel booking')
     } finally {
       setLoading(false)
     }

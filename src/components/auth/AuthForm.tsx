@@ -19,6 +19,7 @@ function AuthFormContent({ type }: AuthFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
+  const nextUrl = searchParams.get('next') || '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,17 +46,17 @@ function AuthFormContent({ type }: AuthFormProps) {
     setSuccess(null)
 
     const getAuthErrorText = (dbErr: unknown) => {
-      const err = dbErr as any
+      const err = dbErr as { message?: string, error_description?: string }
       return String(err?.message || err?.error_description || '').trim()
     }
 
     const isClientAuthError = (dbErr: unknown) => {
-      const status = (dbErr as any)?.status
+      const status = (dbErr as { status?: number })?.status
       return typeof status === 'number' && status >= 400 && status < 500
     }
 
     const shouldUseDemoMode = (dbErr: unknown) => {
-      const err = dbErr as any
+      const err = dbErr as { status?: number, name?: string }
       const status = err?.status
       const message = getAuthErrorText(dbErr)
 
@@ -125,10 +126,10 @@ function AuthFormContent({ type }: AuthFormProps) {
             aud: 'authenticated',
             created_at: new Date().toISOString()
             }
-            useUserStore.getState().setUser(mockUser as any)
+            useUserStore.getState().setUser(mockUser as import('@supabase/supabase-js').User)
             setSuccess('Account created (Demo Mode)! Redirecting...')
             setTimeout(() => {
-              router.push('/')
+              router.push(nextUrl)
               router.refresh()
             }, 1500)
           } else {
@@ -139,7 +140,7 @@ function AuthFormContent({ type }: AuthFormProps) {
         try {
           const { error } = await supabase.auth.signInWithPassword({ email, password })
           if (error) throw error
-          router.push('/')
+          router.push(nextUrl)
           router.refresh()
         } catch (dbErr) {
           // Distinguish validation/client errors from network/server errors
@@ -161,16 +162,16 @@ function AuthFormContent({ type }: AuthFormProps) {
             aud: 'authenticated',
             created_at: new Date().toISOString()
             }
-            useUserStore.getState().setUser(mockUser as any)
-            router.push('/')
+            useUserStore.getState().setUser(mockUser as import('@supabase/supabase-js').User)
+            router.push(nextUrl)
             router.refresh()
           } else {
             setError(getAuthErrorText(dbErr) || 'Login failed')
           }
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed')
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Authentication failed')
     } finally {
       setLoading(false)
     }

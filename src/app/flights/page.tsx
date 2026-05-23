@@ -56,15 +56,15 @@ export default async function FlightsPage({
     if (flightsList.length === 0) {
       flightsList = getMockFlightsForRoute(params.origin || 'DEL', params.destination || 'BOM', params.date)
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const hasPlaceholder = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder.supabase.co')
     if (!hasPlaceholder) {
-      console.warn('Supabase fetch failed, falling back to mock Indian flights database:', err?.message || err)
+      console.warn('Supabase fetch failed, falling back to mock Indian flights database:', (err as Error)?.message || err)
     }
     flightsList = getMockFlightsForRoute(params.origin || 'DEL', params.destination || 'BOM', params.date)
   }
 
-  flightsList = flightsList.filter((flight: any) => new Date(flight.departs_at).getTime() > Date.now())
+  flightsList = flightsList.filter((flight: import('@/store/flightStore').Flight) => new Date(flight.departs_at).getTime() > Date.now())
 
   return (
     <div className="flex-1 w-full relative pt-12 pb-24 px-4 bg-[#09090b]">

@@ -170,9 +170,8 @@ export function PassengerForm() {
 
       setCurrentStep('confirmation')
       router.push(`/booking/confirmation/${data.pnr_code}`)
-    } catch (err: any) {
-      setError(err.message)
-      throw err // rethrow to let the payment modal catch and handle it
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'An error occurred during booking. Please try again.')
     } finally {
       setLoading(false)
     }

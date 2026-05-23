@@ -121,7 +121,7 @@ export function FlightResults({ flights, searchParams }: FlightResultsProps) {
               <div className="relative">
                 <select
                   value={sortBy}
-                  onChange={e => setSortBy(e.target.value as any)}
+                  onChange={e => setSortBy(e.target.value as 'price_asc' | 'price_desc' | 'duration_asc' | 'departs_asc')}
                   className="w-full h-9 px-3 pr-8 rounded-lg border border-white/8 bg-slate-900/60 text-xs text-slate-300 focus:outline-none focus:border-indigo-500/40 cursor-pointer appearance-none"
                 >
                   <option value="price_asc">Price: Low to High</option>
@@ -143,7 +143,7 @@ export function FlightResults({ flights, searchParams }: FlightResultsProps) {
               <div className="relative">
                 <select
                   value={aircraftFilter}
-                  onChange={e => setAircraftFilter(e.target.value as any)}
+                  onChange={e => setAircraftFilter(e.target.value as 'all' | 'boeing' | 'airbus')}
                   className="w-full h-9 px-3 pr-8 rounded-lg border border-white/8 bg-slate-900/60 text-xs text-slate-300 focus:outline-none focus:border-indigo-500/40 cursor-pointer appearance-none"
                 >
                   <option value="all">All Fleets</option>

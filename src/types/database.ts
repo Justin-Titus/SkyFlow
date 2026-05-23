@@ -165,24 +165,24 @@ export interface Database {
           booking_id: string
           old_flight_id: string
           new_flight_id: string
-          rescheduled_at: string
-          fee_paid: number
+          requested_at: string
+          fee_charged: number
         }
         Insert: {
           id?: string
           booking_id: string
           old_flight_id: string
           new_flight_id: string
-          rescheduled_at?: string
-          fee_paid?: number
+          requested_at?: string
+          fee_charged?: number
         }
         Update: {
           id?: string
           booking_id?: string
           old_flight_id?: string
           new_flight_id?: string
-          rescheduled_at?: string
-          fee_paid?: number
+          requested_at?: string
+          fee_charged?: number
         }
         Relationships: [
           {
@@ -223,6 +223,18 @@ export interface Database {
           success: boolean
           booking_id: string
           pnr_code: string
+          error: string
+        }[]
+      }
+      reschedule_booking: {
+        Args: {
+          p_booking_id: string
+          p_user_id: string
+          p_new_flight_id: string
+        }
+        Returns: {
+          success: boolean
+          fee: number
           error: string
         }[]
       }

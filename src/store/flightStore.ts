@@ -16,6 +16,7 @@ export type Flight = {
   departs_at: string;
   arrives_at: string;
   aircraft_type: string;
+  status: string;
   base_price: number;
 }
 
@@ -66,6 +67,7 @@ export const useFlightStore = create<FlightStore>()(
       setPassengerDataList: (passengerDataList) => set({ passengerDataList }),
       setCurrentStep: (currentStep) => set({ currentStep }),
       resetBooking: () => set({ 
+        searchQuery: null,
         selectedFlight: null, 
         selectedSeat: null, 
         selectedSeats: [],
@@ -92,6 +94,7 @@ export const useFlightStore = create<FlightStore>()(
           passport_no: ''
         })) : []
       }),
+      skipHydration: true,
     }
   )
 )

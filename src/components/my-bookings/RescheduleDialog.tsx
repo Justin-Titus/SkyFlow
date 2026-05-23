@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { cn, isUuid } from '@/lib/utils'
+import { Booking } from '@/store/userStore'
 import { createClient } from '@/lib/supabase/client'
 import { useFlightStore } from '@/store/flightStore'
 import { getMockAlternativeFlights } from '@/lib/mockFlights'
@@ -20,15 +21,15 @@ interface RescheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  booking?: any;
+  booking?: Booking;
 }
 
 export function RescheduleDialog({ bookingId, currentFlightId, origin, destination, seatClass, open, onOpenChange, onSuccess, booking }: RescheduleDialogProps) {
   const [loading, setLoading] = useState(false)
-  const [flights, setFlights] = useState<any[]>([])
+  const [flights, setFlights] = useState<import('@/store/flightStore').Flight[]>([])
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [currentBooking, setCurrentBooking] = useState<any>(null)
+  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null)
   
   // Payment states
   const [cardName, setCardName] = useState('')
@@ -54,7 +55,7 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
       } else if (bookingId) {
         try {
           const localBookings = JSON.parse(localStorage.getItem('skyflow_local_bookings') || '[]')
-          const matched = localBookings.find((b: any) => b.id === bookingId)
+          const matched = localBookings.find((b: Booking) => b.id === bookingId)
           if (matched) {
             setCurrentBooking(matched)
           }
@@ -92,13 +93,13 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
       if (error) throw error
       
       const availableFlights = (data || []).filter(f => {
-        const availableSeats = f.seats.filter((s: any) => s.class === seatClass && s.is_available)
+        const availableSeats = f.seats.filter((s: { class: string; is_available: boolean }) => s.class === seatClass && s.is_available)
         return availableSeats.length > 0
       })
 
       setFlights(availableFlights)
-    } catch (err: any) {
-      console.warn('Failed to load alternative flights from Supabase, enabling local fallback:', err?.message || err)
+    } catch (err: unknown) {
+      console.warn('Flight lookup failed:', (err as Error)?.message || err)
       const mockList = getMockAlternativeFlights(origin, destination, currentFlightId)
       setFlights(mockList)
     } finally {
@@ -146,29 +147,30 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
         const m = parseInt(month, 10)
         if (m < 1 || m > 12) {
           throw new Error('Expiration month must be between 01 and 12.')
+        }
 
-                const parts = expiry.split('/')
-                if (parts.length !== 2) {
-                  throw new Error('Invalid expiration date format')
-                }
-                const [monthStr, yearStr] = parts
-                const expiryMonth = parseInt(monthStr, 10)
-                const expiryYearShort = parseInt(yearStr, 10)
-        
-                // Convert 2-digit year to 4-digit year (assume 20xx for 00-99)
-                const currentYear = new Date().getFullYear()
-                const currentYearShort = currentYear % 100
-                let expiryYear = 2000 + expiryYearShort
-                if (expiryYearShort < currentYearShort) {
-                  expiryYear = 2100 + expiryYearShort
-                }
-        
-                // Check if card is expired (compare with current month/year)
-                const now = new Date()
-                const expiryDate = new Date(expiryYear, expiryMonth, 0) // Last day of expiry month
-                if (expiryDate < now) {
-                  throw new Error('Credit card has expired')
-                }
+        // Validate expiry date is not in the past
+        const parts = expiry.split('/')
+        if (parts.length !== 2) {
+          throw new Error('Invalid expiration date format')
+        }
+        const [monthStr, yearStr] = parts
+        const expiryMonth = parseInt(monthStr, 10)
+        const expiryYearShort = parseInt(yearStr, 10)
+
+        // Convert 2-digit year to 4-digit year (assume 20xx for 00-99)
+        const currentYear = new Date().getFullYear()
+        const currentYearShort = currentYear % 100
+        let expiryYear = 2000 + expiryYearShort
+        if (expiryYearShort < currentYearShort) {
+          expiryYear = 2100 + expiryYearShort
+        }
+
+        // Check if card is expired (compare with current month/year)
+        const now = new Date()
+        const expiryDate = new Date(expiryYear, expiryMonth, 0) // Last day of expiry month
+        if (expiryDate < now) {
+          throw new Error('Credit card has expired')
         }
 
         // Simulate payment authorization delay
@@ -192,7 +194,7 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
       // Update local storage bookings list for robust fallback syncing
       try {
         const localBookings = JSON.parse(localStorage.getItem('skyflow_local_bookings') || '[]')
-        const idx = localBookings.findIndex((b: any) => b.id === bookingId)
+        const idx = localBookings.findIndex((b: Booking) => b.id === bookingId)
         if (idx !== -1 && selectedFlight) {
           localBookings[idx].status = 'rescheduled'
           localBookings[idx].flight_id = selectedFlight.id
@@ -212,7 +214,7 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
           const currentSeatClass = localBookings[idx].seats_list?.[0]?.class || localBookings[idx].seats?.class || 'economy'
           
           // Generate realistic seat numbers for the passenger count
-          const newSeatsList: any[] = []
+          const newSeatsList: import('@/store/flightStore').Seat[] = []
           const rowStart = currentSeatClass === 'first' ? 1 : currentSeatClass === 'business' ? 3 : 8
           const seatLetters = currentSeatClass === 'first' ? ['A', 'F'] : currentSeatClass === 'business' ? ['A', 'C', 'D', 'F'] : ['A', 'B', 'C', 'D', 'E', 'F']
           
@@ -236,7 +238,7 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
           
           // Update passengers' seat assignments to remain consistent and eliminate mismatches
           if (localBookings[idx].passengers) {
-            localBookings[idx].passengers = localBookings[idx].passengers.map((p: any, pIdx: number) => ({
+            localBookings[idx].passengers = localBookings[idx].passengers.map((p: import('@/store/flightStore').PassengerFormData, pIdx: number) => ({
               ...p,
               seat_number: newSeatsList[pIdx]?.seat_number || newSeatsList[0].seat_number,
               seat_class: currentSeatClass
@@ -254,8 +256,8 @@ export function RescheduleDialog({ bookingId, currentFlightId, origin, destinati
       onSuccess()
       onOpenChange(false)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Failed to reschedule booking. Please try again.')
     } finally {
       setLoading(false)
     }

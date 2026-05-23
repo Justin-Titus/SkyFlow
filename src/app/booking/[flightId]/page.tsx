@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFlightStore, Seat } from '@/store/flightStore'
+import { useUserStore } from '@/store/userStore'
 import { useRealtimeSeats } from '@/hooks/useRealtimeSeats'
 import { SeatMap } from '@/components/booking/SeatMap'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +15,7 @@ export default function SeatSelectionPage({ params }: { params: Promise<{ flight
   const router = useRouter()
   const { flightId } = use(params)
   const { searchQuery, selectedFlight, selectedSeat, setSelectedSeat, setSelectedSeats, currentStep } = useFlightStore()
+  const { user } = useUserStore()
   
   const { seats, loading, error, broadcastLock } = useRealtimeSeats(flightId)
   
@@ -24,6 +26,11 @@ export default function SeatSelectionPage({ params }: { params: Promise<{ flight
   })
 
   useEffect(() => {
+    // Auth guard — redirect to login if not authenticated
+    if (!user) {
+      router.push(`/login?next=/booking/${flightId}`)
+      return
+    }
     if (!selectedFlight && !loading) {
       router.push('/')
       return
@@ -32,7 +39,7 @@ export default function SeatSelectionPage({ params }: { params: Promise<{ flight
       router.push('/')
       return
     }
-  }, [selectedFlight, loading, router])
+  }, [selectedFlight, loading, router, user, flightId])
 
   // Cleanup seat locks when closing tab, refreshing, or navigating away
   useEffect(() => {

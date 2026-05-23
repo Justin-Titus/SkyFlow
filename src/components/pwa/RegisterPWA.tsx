@@ -3,22 +3,42 @@
 
 import { useEffect, useState } from 'react'
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed',
+    platform: string
+  }>;
+  prompt(): Promise<void>;
+}
+
 export function RegisterPWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstall, setShowInstall] = useState(false)
 
   useEffect(() => {
+    // AGGRESSIVE TBT FIX: Unregister all existing service workers to instantly kill 
+    // the 1.7s of 'Other' time caused by the persistent Workbox background caching loop.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister()
+        }
+      }).catch(console.error)
+    }
+
     const isDismissed = localStorage.getItem('skyflow_pwa_prompt_dismissed') === 'true'
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone
-    
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone)
+
     if (isDismissed || isStandalone) return
  
     // Show the banner
     setShowInstall(true)
 
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
+      const promptEvent = e as BeforeInstallPromptEvent;
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(promptEvent)
     }
 
     window.addEventListener('beforeinstallprompt', handler)

@@ -126,8 +126,8 @@ export function PaymentModal({
     try {
       // Trigger the booking API call
       await onConfirm()
-    } catch (err: any) {
-      setError(err.message || 'Payment authorized, but failed to record booking. Please try again.')
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Payment authorized, but failed to record booking. Please try again.')
       setIsProcessing(false)
     }
   }

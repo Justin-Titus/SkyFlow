@@ -2,6 +2,7 @@
 
 import { Seat } from '@/store/flightStore'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip'
 
 interface SeatMapProps {
   seats: Seat[]
@@ -38,13 +39,24 @@ function SeatButton({ seat, isSelected, onSelect }: { seat: Seat; isSelected: bo
   
   if (!seat.is_available) {
     return (
-      <div 
-        title={`Occupied \u2013 ${config.label}${seat.extra_fee > 0 ? ` (+\u20B9${seat.extra_fee})` : ''}`}
-        className="w-9 h-10 rounded-t-lg rounded-b-sm border border-white/4 bg-white/2 flex items-center justify-center opacity-30 cursor-not-allowed relative"
-      >
-        <div className="w-3 h-0.5 bg-slate-600 rotate-45 absolute" />
-        <div className="w-3 h-0.5 bg-slate-600 -rotate-45 absolute" />
-      </div>
+      <Tooltip>
+        <TooltipTrigger>
+          <div 
+            className="w-9 h-10 rounded-t-lg rounded-b-sm border border-white/4 bg-white/2 flex items-center justify-center opacity-30 cursor-not-allowed relative"
+          >
+            <div className="w-3 h-0.5 bg-slate-600 rotate-45 absolute" />
+            <div className="w-3 h-0.5 bg-slate-600 -rotate-45 absolute" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="whitespace-nowrap">
+          <span className="font-semibold">{seat.seat_number}</span>
+          <span className="text-zinc-400"> · Occupied · </span>
+          <span className="capitalize">{config.label}</span>
+          {seat.extra_fee > 0 && (
+            <span className="text-amber-400 ml-1">(+₹{seat.extra_fee})</span>
+          )}
+        </TooltipContent>
+      </Tooltip>
     )
   }
 

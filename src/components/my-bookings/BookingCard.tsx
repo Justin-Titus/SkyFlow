@@ -3,18 +3,22 @@
 
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
+import { Booking } from '@/store/userStore'
+import { Seat } from '@/store/flightStore'
 import { format, differenceInMinutes } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 interface BookingCardProps {
-  booking: any;
+  booking: Booking;
 }
 
 export function BookingCard({ booking }: BookingCardProps) {
   const router = useRouter()
-  const flight = booking.flights
+  const flight = booking.flights || booking.flight
+  
+  if (!flight) return null;
   const seatsList = booking.seats_list || (booking.seats ? [booking.seats] : [])
-  const seatNumbers = seatsList.map((s: any) => s.seat_number).join(', ')
+  const seatNumbers = seatsList.map((s: Seat) => s.seat_number).join(', ')
   const seatClass = seatsList[0]?.class || 'economy'
 
   const departs = new Date(flight.departs_at)

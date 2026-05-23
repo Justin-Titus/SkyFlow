@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFlightStore } from '@/store/flightStore'
 import { Button } from '@/components/ui/Button'
-import { format, addDays } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
 
 const AIRPORTS = [
   { code: 'DEL', city: 'Delhi', country: 'IN' },
@@ -72,7 +70,11 @@ export function SearchForm() {
   
   const [origin, setOrigin] = useState('DEL')
   const [destination, setDestination] = useState('BOM')
-  const [date, setDate] = useState(format(addDays(new Date(), 10), 'yyyy-MM-dd'))
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 10)
+    return d.toISOString().split('T')[0]
+  })
   const [passengers, setPassengers] = useState(1)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,7 +92,7 @@ export function SearchForm() {
       setError('Origin and destination airports cannot be the same.')
       return
     }
-    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const todayStr = new Date().toISOString().split('T')[0]
     if (date < todayStr) {
       setError('Departure date cannot be in the past.')
       return
@@ -106,16 +108,14 @@ export function SearchForm() {
   return (
     <form onSubmit={handleSearch}>
       {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2"
+        <div
+          className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 animate-fade-in-up"
         >
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <span className="font-semibold">{error}</span>
-        </motion.div>
+        </div>
       )}
       <div className="flex flex-col sm:flex-row gap-2">
         {/* From / To Row */}
@@ -175,15 +175,19 @@ export function SearchForm() {
         <div className="flex gap-2">
           <FieldWrapper label="Date" className="min-w-[140px]" onClick={handleDateClick} htmlFor="date-input">
             <span className="text-sm font-semibold text-white pointer-events-none">
-              {date ? format(new Date(date), 'MMM dd, yyyy') : 'Select'}
+              {date ? (() => {
+                const [y, m, d] = date.split('-');
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return `${months[parseInt(m, 10) - 1]} ${d}, ${y}`;
+              })() : 'Select'}
             </span>
             <input
               type="date"
               id="date-input"
               ref={dateInputRef}
               value={date}
-              onChange={e => { setDate(e.target.value); const todayStr = format(new Date(), 'yyyy-MM-dd'); if (e.target.value >= todayStr) setError(null); }}
-              min={format(new Date(), 'yyyy-MM-dd')}
+              onChange={e => { setDate(e.target.value); const todayStr = new Date().toISOString().split('T')[0]; if (e.target.value >= todayStr) setError(null); }}
+              min={new Date().toISOString().split('T')[0]}
               className="absolute inset-0 opacity-0 cursor-pointer pointer-events-auto"
               required
             />

@@ -13,11 +13,31 @@ import { motion } from 'framer-motion'
 type FilterType = 'all' | 'confirmed' | 'completed' | 'cancelled'
 
 export default function MyBookingsPage() {
-  const [bookings, setBookings] = useState<any[]>([])
+  const [bookings, setBookings] = useState<import('@/store/userStore').Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
   const router = useRouter()
   const supabase = createClient()
+
+  // Auth guard — redirect immediately if no user in store or Supabase session
+  useEffect(() => {
+    const checkAuth = async () => {
+      // First check the persisted Zustand store (fast, synchronous-like)
+      const storeUser = useUserStore.getState().user
+      if (storeUser) return // already logged in, proceed
+
+      // Fallback: check Supabase session (async)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login?next=/my-bookings')
+        }
+      } catch {
+        router.push('/login?next=/my-bookings')
+      }
+    }
+    checkAuth()
+  }, [router, supabase.auth])
 
   const fetchBookings = async () => {
     setLoading(true)
@@ -37,11 +57,11 @@ export default function MyBookingsPage() {
     }
 
     if (!activeUser) {
-      router.push('/login')
+      router.push('/login?next=/my-bookings')
       return
     }
 
-    let bookingsList: any[] = []
+    let bookingsList: import('@/store/userStore').Booking[] = []
 
     if (activeUser && isUuid(activeUser.id)) {
       try {
@@ -53,8 +73,8 @@ export default function MyBookingsPage() {
         
         if (error) throw error
         bookingsList = data || []
-      } catch (err: any) {
-        console.warn('Failed to fetch bookings from Supabase, loading locally:', err?.message || err)
+      } catch (err: unknown) {
+        console.warn('Failed to fetch bookings from Supabase, loading locally:', (err as Error)?.message || err)
         bookingsList = useUserStore.getState().cachedBookings || []
       }
     } else {
@@ -64,10 +84,10 @@ export default function MyBookingsPage() {
     // Always merge or fallback to localStorage bookings
     try {
       const localBookings = JSON.parse(localStorage.getItem('skyflow_local_bookings') || '[]')
-      const localOnly = localBookings.filter((lb: any) => !bookingsList.some((sb: any) => sb.id === lb.id))
+      const localOnly = localBookings.filter((lb: import('@/store/userStore').Booking) => !bookingsList.some((sb: import('@/store/userStore').Booking) => sb.id === lb.id))
       bookingsList = [...bookingsList, ...localOnly]
       // Sort bookingsList by booked_at descending
-      bookingsList.sort((a: any, b: any) => new Date(b.booked_at).getTime() - new Date(a.booked_at).getTime())
+      bookingsList.sort((a: import('@/store/userStore').Booking, b: import('@/store/userStore').Booking) => new Date(b.booked_at).getTime() - new Date(a.booked_at).getTime())
     } catch (localErr) {
       console.error('Failed to parse local bookings:', localErr)
     }
@@ -78,6 +98,7 @@ export default function MyBookingsPage() {
   }
 
   useEffect(() => { fetchBookings() }, [])
+
 
   // Filter bookings based on status and departure times
   const filteredBookings = bookings.filter(b => {

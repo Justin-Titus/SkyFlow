@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { RealtimeChannel } from '@supabase/supabase-js'
 import { Seat, useFlightStore } from '@/store/flightStore'
 import { isUuid } from '@/lib/utils'
 
@@ -63,8 +64,8 @@ export function useRealtimeSeats(flightId: string) {
   const [mySessionId] = useState(() => Math.random().toString(36).substring(2, 12))
   
   const supabase = createClient()
-  const localChannelRef = useRef<any>(null)
-  const supabaseChannelRef = useRef<any>(null)
+  const localChannelRef = useRef<BroadcastChannel | null>(null)
+  const supabaseChannelRef = useRef<RealtimeChannel | null>(null)
 
   // Overlay booked seats from localStorage
   const overlayLocalBookings = useCallback((seatList: Seat[]): Seat[] => {
@@ -76,7 +77,7 @@ export function useRealtimeSeats(flightId: string) {
       for (const b of bookings) {
         if (b.flight_id === flightId && b.status !== 'cancelled') {
           if (b.seats_list && Array.isArray(b.seats_list)) {
-            b.seats_list.forEach((s: any) => bookedSeatIds.push(s.id))
+            b.seats_list.forEach((s: Seat) => bookedSeatIds.push(s.id))
           } else if (b.seats && b.seats.id) {
             bookedSeatIds.push(b.seats.id)
           }
@@ -128,7 +129,7 @@ export function useRealtimeSeats(flightId: string) {
 
     // Initialize BroadcastChannel for cross-tab local sync
     const localChannelName = `skyflow_seat_locks_${flightId}`
-    let localChannel: any = null
+    let localChannel: BroadcastChannel | null = null
     try {
       localChannel = new BroadcastChannel(localChannelName)
       localChannelRef.current = localChannel
@@ -176,7 +177,7 @@ export function useRealtimeSeats(flightId: string) {
 
     // Configure BroadcastChannel listener
     if (localChannel) {
-      localChannel.onmessage = (event: any) => {
+      localChannel.onmessage = (event: MessageEvent) => {
         const { type, payload } = event.data
         if (type === 'seat_lock') {
           handleSeatLockMsg(payload)
@@ -241,8 +242,8 @@ export function useRealtimeSeats(flightId: string) {
           }
           setLoading(false)
         }
-      } catch (err: any) {
-        console.warn('Seats fetch failed, falling back to mock cabin map:', err?.message || err)
+      } catch (err: unknown) {
+        console.warn('Seats fetch failed, falling back to mock cabin map:', (err as Error)?.message || err)
         if (isMounted) {
           setSeats(overlayLocalBookings(generateMockSeats(flightId)))
           setLoading(false)
@@ -253,7 +254,7 @@ export function useRealtimeSeats(flightId: string) {
     fetchSeats()
 
     // Subscribe to hard changes in the database seats table (e.g. final bookings)
-    let seatsChannel: any = null
+    let seatsChannel: RealtimeChannel | null = null
     if (isUuid(flightId)) {
       seatsChannel = supabase
         .channel(`seats_changes_${flightId}`)
@@ -326,10 +327,10 @@ export function useRealtimeSeats(flightId: string) {
         localChannel?.close()
       } catch (e) {}
       try {
-        supabase.removeChannel(seatsChannel)
+        if (seatsChannel) supabase.removeChannel(seatsChannel)
       } catch (e) {}
       try {
-        supabase.removeChannel(supabaseBroadcastChannel)
+        if (supabaseBroadcastChannel) supabase.removeChannel(supabaseBroadcastChannel)
       } catch (e) {}
     }
   }, [flightId, supabase, mySessionId, overlayLocalBookings])

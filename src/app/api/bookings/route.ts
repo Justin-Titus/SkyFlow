@@ -1,6 +1,44 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const pnr = searchParams.get('pnr')
+    const bookingId = searchParams.get('id')
+
+    if (!pnr && !bookingId) {
+      return NextResponse.json({ error: 'Provide pnr or id query param' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    let query = supabase
+      .from('bookings')
+      .select('*, flights(*), seats(*), passengers(*)')
+      .eq('user_id', user.id)
+
+    if (pnr) {
+      query = query.eq('pnr_code', pnr.toUpperCase())
+    } else if (bookingId) {
+      query = query.eq('id', bookingId)
+    }
+
+    const { data, error } = await query.single()
+    if (error || !data) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, booking: data })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
+
 function generateMockUUID(): string {
   const chars = '0123456789abcdef'
   let randomPart = ''
@@ -38,7 +76,7 @@ export async function POST(request: Request) {
     const passengerAssignments = passengers || [{ seatId, passengerData }]
 
     const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
-    const hasMockIds = !isUuid(flightId) || passengerAssignments.some((a: any) => !isUuid(a.seatId))
+    const hasMockIds = !isUuid(flightId) || passengerAssignments.some((a: { seatId: string }) => !isUuid(a.seatId))
     if (hasMockIds) {
       isMockMode = true
     }
@@ -73,7 +111,7 @@ export async function POST(request: Request) {
         })
 
         if (error) throw error
-        const result = data as any
+        const result = data as unknown as { success: boolean, booking_id?: string, pnr_code?: string, error?: string }
 
         if (!result || !result.success) {
           return NextResponse.json({ error: result?.error || 'Failed to reserve seat. It might be already taken.' }, { status: 400 })
@@ -96,8 +134,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: errorMessage }, { status: 500 })
     }
     
-  } catch (error: any) {
-    console.error('Booking API Error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err: unknown) {
+    console.error('Booking Error:', err)
+    return NextResponse.json({ error: (err as Error)?.message || 'Internal Server Error' }, { status: 500 })
   }
 }

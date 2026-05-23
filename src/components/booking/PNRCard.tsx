@@ -27,7 +27,7 @@ interface PNRCardProps {
 
 export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
   const router = useRouter()
-  const [booking, setBooking] = useState<any>(null)
+  const [booking, setBooking] = useState<import('@/store/userStore').Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [revealed, setRevealed] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
@@ -37,7 +37,7 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
     const loadLocalBooking = () => {
       try {
         const localBookings = JSON.parse(localStorage.getItem('skyflow_local_bookings') || '[]')
-        const matched = localBookings.find((b: any) => 
+        const matched = localBookings.find((b: import('@/store/userStore').Booking) => 
           b.id === bookingId || 
           (b.pnr_code && b.pnr_code.toUpperCase() === bookingId.toUpperCase())
         )
@@ -54,6 +54,10 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
             
             setBooking({
               id: bookingId,
+              flight_id: store.selectedFlight.id,
+              seat_id: store.selectedSeat.id,
+              status: 'confirmed',
+              booked_at: new Date().toISOString(),
               pnr_code: expectedPnr,
               total_price: store.selectedFlight.base_price + store.selectedSeat.extra_fee,
               flights: store.selectedFlight,
@@ -105,8 +109,8 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
       } else {
         throw new Error('Booking not found in database')
       }
-    } catch (err: any) {
-      console.warn('Booking fetch from Supabase failed, searching locally:', err?.message || err)
+    } catch (err: unknown) {
+      console.warn('Booking fetch from Supabase failed, searching locally:', (err as Error)?.message || err)
       loadLocalBooking()
     } finally {
       setLoading(false)
@@ -141,12 +145,22 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
     )
   }
 
-  const flight = booking.flights
+  const flight = booking.flights || booking.flight
+  
+  if (!flight) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+        <AnimatedBackground />
+        <p className="text-slate-500 mb-4">Flight details not found.</p>
+        <Button variant="outline" onClick={() => router.push('/')}>Return home</Button>
+      </div>
+    )
+  }
   const seatsList = booking.seats_list || (booking.seats ? [booking.seats] : [])
   const passengers = booking.passengers || []
 
   // Ensure 100% consistency between the passenger manifest list and the tear-off stub
-  const assignedPassengers = passengers.map((p: any, idx: number) => {
+  const assignedPassengers = passengers.map((p: import('@/store/flightStore').PassengerFormData & { seat_number?: string, seat_class?: string }, idx: number) => {
     const matchedSeat = seatsList[idx] || seatsList[0] || {}
     const seatNumber = matchedSeat.seat_number || p.seat_number || '—'
     const seatClass = matchedSeat.class || p.seat_class || 'economy'
@@ -298,7 +312,7 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
               <div className="mt-6 pt-6 border-t border-white/5">
                 <div className="text-[9px] text-slate-600 uppercase tracking-widest mb-3">Passenger & Seat Manifest</div>
                 <div className="space-y-2">
-                  {assignedPassengers.map((p: any, idx: number) => {
+                  {assignedPassengers.map((p: import('@/store/flightStore').PassengerFormData & { seatNumber: string, seatClass: string }, idx: number) => {
                     return (
                       <div key={idx} className="flex items-center justify-between bg-white/2 rounded-xl px-4 py-2.5 border border-white/5">
                         <div className="flex items-center gap-3">
@@ -342,8 +356,8 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
               <div className="text-right">
                 <div className="text-[9px] text-slate-700 uppercase tracking-widest mb-1">Seat(s)</div>
                 <div className="text-lg font-display font-bold text-indigo-300">
-                  {assignedPassengers.map((p: any) => p.seatNumber).filter((s: string) => s !== '—').join(', ') || 
-                   seatsList.map((s: any) => s.seat_number).join(', ') || 
+                  {assignedPassengers.map((p: import('@/store/flightStore').PassengerFormData & { seatNumber?: string }) => p.seatNumber).filter((s: string | undefined): s is string => s !== undefined && s !== '—').join(', ') || 
+                   seatsList.map((s: import('@/store/flightStore').Seat) => s.seat_number).join(', ') ||
                    '—'}
                 </div>
               </div>
@@ -412,9 +426,9 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
           <RescheduleDialog
             booking={booking}
             bookingId={booking.id}
-            currentFlightId={booking.flights.id}
-            origin={booking.flights.origin}
-            destination={booking.flights.destination}
+            currentFlightId={flight.id}
+            origin={flight.origin}
+            destination={flight.destination}
             seatClass={booking.seats_list?.[0]?.class || booking.seats?.class || 'economy'}
             open={rescheduleOpen}
             onOpenChange={setRescheduleOpen}
@@ -427,7 +441,7 @@ export function PNRCard({ bookingId, isConfirmation = false }: PNRCardProps) {
         {cancelOpen && (
           <CancelDialog
             bookingId={booking.id}
-            flightDate={booking.flights.departs_at}
+            flightDate={flight.departs_at}
             open={cancelOpen}
             onOpenChange={setCancelOpen}
             onSuccess={fetchBooking}
